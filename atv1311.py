@@ -21,7 +21,6 @@ def listar_clientes():
 def alterar_cliente():
 
     try:
-
         listar_clientes()
 
         cliente_id = input("Digite o ID do cliente que deseja alterar: ")
@@ -62,6 +61,13 @@ def alterar_cliente():
         else:
             raise Exception("Alteração cancelada pelo usuário.")
 
+    except psycopg2.DatabaseError as e:
+        if e.pgcode == "55P03":  # Código SQLSTATE para lock timeout
+            print("Erro: Outro processo está utilizando o mesmo registro. Por favor, tente novamente mais tarde.")
+        else:
+            print(f"Erro inesperado: {e}")
+        conn.rollback()
+
     except Exception as e:
         print("Erro:", e)
         conn.rollback()
@@ -70,4 +76,5 @@ def alterar_cliente():
         cursor.close()
         conn.close()
 
+# Executar a função
 alterar_cliente()
