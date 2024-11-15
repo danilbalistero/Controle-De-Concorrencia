@@ -10,24 +10,57 @@ conn = psycopg2.connect(
 conn.autocommit = False
 cursor = conn.cursor()
 
-def update_quantidade():
+def listar_clientes():
+    cursor.execute("SELECT idcliente, nome, limite FROM cliente")
+    clientes = cursor.fetchall()
+    print("Lista de Clientes:")
+    for cliente in clientes:
+        print(f"ID: {cliente[0]}, Nome: {cliente[1]}, Limite: {cliente[2]}")
+    return clientes
+
+def alterar_cliente():
+
     try:
+
+        listar_clientes()
+
+        cliente_id = input("Digite o ID do cliente que deseja alterar: ")
+
+        cursor.execute("SELECT idcliente, nome, limite FROM cliente WHERE idcliente = %s", [cliente_id])
+        cliente = cursor.fetchone()
+
+        if not cliente:
+            print("Cliente não encontrado!")
+            return
+
+        print(f"Dados Atuais - ID: {cliente[0]}, Nome: {cliente[1]}, Limite: {cliente[2]}")
+        dados_atuais = {"nome": cliente[1], "limite": cliente[2]}
+
         cursor.execute("SET lock_timeout = '3s'")
         cursor.execute("BEGIN")
 
-        cursor.execute("SELECT quantidade FROM estoque WHERE id = 1")
-        quantidade_atual = cursor.fetchone()[0]
-        print(f"Quantidade atual do Produto X: {quantidade_atual}")
+        cursor.execute("SELECT idcliente, nome, limite FROM cliente WHERE idcliente = %s", [cliente_id])
+        cliente_verificacao = cursor.fetchone()
 
-        nova_quantidade = input("Insira a nova quantidade para o Produto X: ")
-        cursor.execute(f"UPDATE estoque SET quantidade = %s WHERE id = 1", [nova_quantidade])
-        confirmacao = input("Tem certeza que deseja fazer essa alteração? (sim/não): ")
+        if cliente_verificacao[1] != dados_atuais["nome"] or cliente_verificacao[2] != dados_atuais["limite"]:
+            print("Os dados foram alterados por outro usuário. Operação cancelada.")
+            conn.rollback()
+            return
 
+        novo_nome = input("Digite o novo nome: ")
+        novo_limite = input("Digite o novo limite (formato 99999.99): ")
+
+        cursor.execute(
+            "UPDATE cliente SET nome = %s, limite = %s WHERE idcliente = %s",
+            [novo_nome, novo_limite, cliente_id]
+        )
+
+        confirmacao = input("Confirma a alteração? (sim/não): ")
         if confirmacao.lower() == 'sim':
             conn.commit()
             print("Alteração confirmada.")
         else:
-            raise Exception("Alteração não confirmada.")
+            raise Exception("Alteração cancelada pelo usuário.")
 
     except Exception as e:
         print("Erro:", e)
@@ -37,4 +70,4 @@ def update_quantidade():
         cursor.close()
         conn.close()
 
-update_quantidade()
+alterar_cliente()
