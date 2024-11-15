@@ -62,7 +62,7 @@ def alterar_cliente():
             raise Exception("Alteração cancelada pelo usuário.")
 
     except psycopg2.DatabaseError as e:
-        if e.pgcode == "55P03":  # Código SQLSTATE para lock timeout
+        if e.pgcode == "55P03":
             print("Erro: Outro processo está utilizando o mesmo registro. Por favor, tente novamente mais tarde.")
         else:
             print(f"Erro inesperado: {e}")
@@ -76,5 +76,4 @@ def alterar_cliente():
         cursor.close()
         conn.close()
 
-# Executar a função
 alterar_cliente()
